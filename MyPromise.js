@@ -1,7 +1,10 @@
+function isPromise(obj) {
+  return !!(obj && typeof obj === "object" && typeof obj.then === "function");
+}
 function toMicrotaskQueue(callback) {
   if (globalThis.process && globalThis.process.nextTick) {
     process.nextTick(callback);
-  } else if (MutationObserver) {
+  } else if (globalThis.MutationObserver) {
     const p = document.createElement("p");
     const osv = new MutationObserver(callback);
     osv.observe(p, { childList: true });
@@ -10,11 +13,8 @@ function toMicrotaskQueue(callback) {
     setTimeout(callback, 0);
   }
 }
-function isPromise(obj) {
-  return !!(obj && typeof obj === "object" && typeof obj.then === "function");
-}
 const PENDING = "pending";
-const FULFILLED = "fulFilled";
+const FULFILLED = "fulfilled";
 const REJECTED = "rejected";
 class MyPromise {
   constructor(executor) {
@@ -30,45 +30,14 @@ class MyPromise {
       this._reject(err);
     }
   }
-  _toHandlersQueue(executor, onState, resolve, reject) {
-    this._handlerQueue.push({ executor, onState, resolve, reject });
-  }
   _changeState(newState, result) {
     if (this._state === PENDING) {
       this._state = newState;
       this._result = result;
     }
   }
-  _consoleErr(reason) {
-    let hasOnRejected = false;
-    for (const handler of this._handlerQueue) {
-      if (handler.onState === REJECTED) {
-        hasOnRejected = true;
-      }
-    }
-    if (!hasOnRejected) {
-      console.error(reason);
-    }
-  }
-  _resolve(data) {
-    this._changeState(FULFILLED, data);
-    this._runHandlerQueue();
-  }
-  _reject(reason) {
-    toMicrotaskQueue(() => {
-      this._consoleErr(reason);
-      this._changeState(REJECTED, reason);
-      this._runHandlerQueue();
-    });
-  }
-  _runHandlerQueue() {
-    if (this._state === PENDING) {
-      return;
-    }
-    while (this._handlerQueue[0]) {
-      this._runOneHandler(this._handlerQueue[0]);
-      this._handlerQueue.shift();
-    }
+  _toHandlerQueue(executor, onState, resolve, reject) {
+    this._handlerQueue.push({ executor, onState, resolve, reject });
   }
   _runOneHandler({ executor, onState, resolve, reject }) {
     if (this._state !== onState) {
@@ -76,9 +45,7 @@ class MyPromise {
     }
     toMicrotaskQueue(() => {
       if (typeof executor !== "function") {
-        this._state === FULFILLED
-          ? resolve(this._result)
-          : reject(this._result);
+        this.then(resolve, reject);
       } else {
         try {
           const result = executor(this._result);
@@ -93,10 +60,46 @@ class MyPromise {
       }
     });
   }
+  _runHandlerQueue() {
+    if (this._state === PENDING) {
+      return;
+    }
+    while (this._handlerQueue[0]) {
+      this._runOneHandler(this._handlerQueue[0]);
+      this._handlerQueue.shift();
+    }
+  }
+  _consoleErr(reason) {
+    if (this._state === FULFILLED) {
+      return;
+    }
+    let hasOnRejected = false;
+    for (const handler of this._handlerQueue) {
+      if (handler.onState === REJECTED) {
+        hasOnRejected = true;
+      }
+    }
+    if (!hasOnRejected) {
+      console.error(reason);
+    }
+  }
+  _resolve(value) {
+    toMicrotaskQueue(() => {
+      this._changeState(FULFILLED, value);
+      this._runHandlerQueue();
+    });
+  }
+  _reject(reason) {
+    toMicrotaskQueue(() => {
+      this._consoleErr(reason);
+      this._changeState(REJECTED, reason);
+      this._runHandlerQueue();
+    });
+  }
   then(onFulfilled, onRejected) {
     return new MyPromise((resolve, reject) => {
-      this._toHandlersQueue(onFulfilled, FULFILLED, resolve, reject);
-      this._toHandlersQueue(onRejected, REJECTED, resolve, reject);
+      this._toHandlerQueue(onFulfilled, FULFILLED, resolve, reject);
+      this._toHandlerQueue(onRejected, REJECTED, resolve, reject);
       this._runHandlerQueue();
     });
   }
@@ -134,8 +137,8 @@ class MyPromise {
   }
   static all(proms) {
     return new MyPromise((resolve, reject) => {
-      if (!proms || typeof proms[Symbol.iterator] !== "function") {
-        throw new TypeError(`${proms} is not iterable`);
+      if (typeof proms[Symbol.iterator] !== "function") {
+        throw TypeError(`${proms} is not iterable`);
       }
       const valueArr = [];
       let promCounter = 0;

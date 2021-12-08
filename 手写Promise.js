@@ -18,7 +18,7 @@
   如果 executor 函数中执行了 reject 函数， 
                           相当于执行了 _reject ， _reject 函数 会让 Promise 任务失败，并且会把 _reject 函数执行时接收的实参作为任务失败的原因，
 
-      让 Promise 状态为 fulFilled 或 rejected                        ->   把 _state 变为 "fulFilled" / "rejected"
+      让 Promise 状态为 fulfilled 或 rejected                        ->   把 _state 变为 "fulfilled" / "rejected"
       把 resolve 函数 / reject 函数 执行时接收的实参作为任务完成的数据     ->   给 _result 赋值为 resolve 函数 / reject 函数 执行时接收的实参
 
   _resolve 函数 和 _reject 函数 可以直接在 constructor 里面定义，但是看起来不好看，所以下面把 _resolve 函数 和 _reject 函数 定义到原型上，因为不希望被外部调用，所以命名时在前面加下划线：
@@ -32,7 +32,7 @@
 //   }
 //   _resolve(data) {
 //     // console.log("任务成功", data);
-//     this._state = "fulFilled";
+//     this._state = "fulfilled";
 //     this._result = data;
 //   }
 //   _reject(reason) {
@@ -74,7 +74,7 @@
 //     executor(this._resolve.bind(this), this._reject.bind(this));
 //   }
 //   _resolve(data) {
-//     this._state = "fulFilled";
+//     this._state = "fulfilled";
 //     this._result = data;
 //   }
 //   _reject(reason) {
@@ -84,11 +84,11 @@
 // }
 
 /*
-🟢 进一步改进上面的代码，因为 字符串 "pending" "fulFilled" "rejected" 会被经常用到，为了方便维护，把它们各自设为一个常量：
+🟢 进一步改进上面的代码，因为 字符串 "pending" "fulfilled" "rejected" 会被经常用到，为了方便维护，把它们各自设为一个常量：
 */
 
 // const PENDING = "pending";
-// const FULFILLED = "fulFilled";
+// const FULFILLED = "fulfilled";
 // const REJECTED = "rejected";
 // class MyPromise {
 //   constructor(executor) {
@@ -111,7 +111,7 @@
 */
 
 // const PENDING = "pending";
-// const FULFILLED = "fulFilled";
+// const FULFILLED = "fulfilled";
 // const REJECTED = "rejected";
 // class MyPromise {
 //   constructor(executor) {
@@ -136,7 +136,7 @@
 */
 
 // const PENDING = "pending";
-// const FULFILLED = "fulFilled";
+// const FULFILLED = "fulfilled";
 // const REJECTED = "rejected";
 // class MyPromise {
 //   constructor(executor) {
@@ -164,7 +164,7 @@
 */
 
 // const PENDING = "pending";
-// const FULFILLED = "fulFilled";
+// const FULFILLED = "fulfilled";
 // const REJECTED = "rejected";
 // class MyPromise {
 //   constructor(executor) {
@@ -234,7 +234,7 @@ then 函数接收两个参数 onFulfilled 和 onRejected ， onFulfilled 和 onR
               那么 then 的返回值 p1 的 _state 和  _result 和 p2 保持一致
             
               如果 _handlerQueue 中的函数的返回值 不是一个 Promise 对象 
-              那么 then 的返回值 p1 的 _state 为 fulFilled ， _result 值为 _handlerQueue 中的函数的返回值，
+              那么 then 的返回值 p1 的 _state 为 fulfilled ， _result 值为 _handlerQueue 中的函数的返回值，
 
         2. 如果 _handlerQueue 中的函数执行过程中出错， 
               那么 then 的返回值 p1 的 _state 为 rejected ， _result 值为 _handlerQueue 中的函数执行过程中抛出的错误信息
@@ -306,7 +306,7 @@ then 函数接收两个参数 onFulfilled 和 onRejected ， onFulfilled 和 onR
 // }
 
 // const PENDING = "pending";
-// const FULFILLED = "fulFilled";
+// const FULFILLED = "fulfilled";
 // const REJECTED = "rejected";
 
 // class MyPromise {
@@ -435,7 +435,7 @@ function isPromise(obj) {
   return !!(obj && typeof obj === "object" && typeof obj.then === "function");
 }
 const PENDING = "pending";
-const FULFILLED = "fulFilled";
+const FULFILLED = "fulfilled";
 const REJECTED = "rejected";
 class MyPromise {
   constructor(executor) {
@@ -537,7 +537,7 @@ class MyPromise {
   /* 🟡
 
   Promise 的静态方法 resolve(data) ,
-  返回一个值为 data 、 状态为 fulFilled 的新的 Promise 对象，也就是 new Promise((resolve) => { resolve(data);})
+  返回一个值为 data 、 状态为 fulfilled 的新的 Promise 对象，也就是 new Promise((resolve) => { resolve(data);})
 
   特殊情况：
   1. 如果 data 是 ES6 的 Promise 对象，那么 resolve(data) 的返回值为 data 本身 
@@ -579,14 +579,14 @@ class MyPromise {
   
   proms 是一个可迭代对象，每次迭代的结果 prom 是一个 Promise 对象，如果 prom 不是 Promise 对象，就替代为 Promise.resolve(prom) ,相当于全部迭代结果都替代为  Promise.resolve(prom) ，因为如果 prom 是 Promise 对象 / PromiseLike 对象，那么 Promise.resolve(prom) 的返回值（一个 Promise 对象）的状态和数据 ==== prom 的状态和数据
 
-  如果 proms 没有迭代结果，比如是个空数组，那么 Promise.all(proms) 返回的 Promise 对象状态为 fulFilled ,值为 []
+  如果 proms 没有迭代结果，比如是个空数组，那么 Promise.all(proms) 返回的 Promise 对象状态为 fulfilled ,值为 []
 
   如果 proms 不是可迭代对象，抛出错误，构造器会接住并处理
 
   */
   static all(proms) {
     return new MyPromise((resolve, reject) => {
-      if (!proms || typeof proms[Symbol.iterator] !== "function") {
+      if (typeof proms[Symbol.iterator] !== "function") {
         throw new TypeError(`${proms} is not iterable`);
       }
       const valueArr = [];
@@ -617,37 +617,37 @@ class MyPromise {
     返回一个任务， proms 任一任务成功则成功，数据为第一个成功的任务的数据，任务全部失败则失败
   */
 
-  static any(proms) {
-    return new MyPromise((resolve, reject) => {
-      if (!proms || typeof proms[Symbol.iterator] !== "function") {
-        throw new TypeError(`${proms} is not iterable`);
-      }
-      const reasonArr = [];
-      let promCounter = 0;
-      let onRejectedCounter = 0;
-      for (const prom of proms) {
-        const index = promCounter;
-        promCounter++;
-        MyPromise.resolve(prom).then(
-          (value) => {
-            resolve(value);
-          },
-          (reason) => {
-            reasonArr[index] = reason;
-            onRejectedCounter++;
-            if (onRejectedCounter === promCounter) {
-              reject(reasonArr);
-              // reject(new Error(`All promises were rejected`));
-            }
-          }
-        );
-      }
-      if (promCounter === 0) {
-        reject();
-        // reject(new Error(`All promises were rejected`));
-      }
-    });
-  }
+  // static any(proms) {
+  //   return new MyPromise((resolve, reject) => {
+  //     if (typeof proms[Symbol.iterator] !== "function") {
+  //       throw new TypeError(`${proms} is not iterable`);
+  //     }
+  //     const reasonArr = [];
+  //     let promCounter = 0;
+  //     let onRejectedCounter = 0;
+  //     for (const prom of proms) {
+  //       const index = promCounter;
+  //       promCounter++;
+  //       MyPromise.resolve(prom).then(
+  //         (value) => {
+  //           resolve(value);
+  //         },
+  //         (reason) => {
+  //           reasonArr[index] = reason;
+  //           onRejectedCounter++;
+  //           if (onRejectedCounter === promCounter) {
+  //             reject(reasonArr);
+  //             // reject(new Error(`All promises were rejected`));
+  //           }
+  //         }
+  //       );
+  //     }
+  //     if (promCounter === 0) {
+  //       reject();
+  //       // reject(new Error(`All promises were rejected`));
+  //     }
+  //   });
+  // }
 
   /* 🟡
 
@@ -664,7 +664,7 @@ class MyPromise {
 
   // static allSettled(proms) {
   //   return new MyPromise((resolve) => {
-  //     if (!proms || typeof proms[Symbol.iterator] !== "function") {
+  //     if (typeof proms[Symbol.iterator] !== "function") {
   //       throw new TypeError(`${proms} is not iterable`);
   //     }
   //     const resultArr = [];
