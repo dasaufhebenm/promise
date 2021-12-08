@@ -254,8 +254,6 @@ then 函数接收两个参数 onFulfilled 和 onRejected ， onFulfilled 和 onR
               node 的全局对象有一个 process 属性是一个对象并且这个对象有一个 nextTick 属性， nextTick 就是 node 的微队列，通过 process.nextTick(callback); 可以把 callback 放到微队列
               浏览器 的全局对象没有 process 属性
 
-              
-
         2. 如果在支持 MutationObserver 的浏览器：
               MutationObserver 对象可以用来监测一个 DOM 对象有没有发生变化，创建 MutationObserver 对象时可以传入一个回调函数 callback ， 通过 .observe() 可以指定监听哪一个 DOM 对象 和 监听这个 DOM 对象什么方面的变化，当发生变化的时候，回调函数 callback 就会被放入微队列
 
@@ -524,7 +522,6 @@ class MyPromise {
   */
 
   finally(onSettled) {
-    // return this.then(onSettled, onSettled); 这样写会导致 onSettled 的返回值成为 p2 的数据，所以要在 onSettled 外面套一个函数，保留 p 的 data 和 reason
     return this.then(
       (value) => {
         onSettled();
@@ -703,7 +700,6 @@ class MyPromise {
   /* 🟢 
   
   上面的 allSettled 写得太复杂，可以直接利用 all ，因为 all 的参数就是 proms ，只要确保 proms 里的每一个 Promise 对象都肯定成功 ， all 返回的 Promise 对象一定成功
-
   要确保 proms 里的每一个 Promise 对象都肯定成功 -> 把每一个 Promise 对象都换成 它.then()
 
   */
