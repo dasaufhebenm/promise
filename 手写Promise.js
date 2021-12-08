@@ -200,44 +200,44 @@ then 函数接收两个参数 onFulfilled 和 onRejected ， onFulfilled 和 onR
 
     函数 (resolve, reject) => {...} 是立即被执行的，所以可以把 then 函数要执行的代码放到 ... 里面
 
-    1. 把 onFulfilled 函数和 onRejected 函数都放到一个队列，这个队列用一个数组 _handlerQueueQueue 来表示，
-    2. 依次处理这个 _handlerQueueQueue 中 符合条件（如果 Promise 对象的 _state 为 FULFILLED 时要执行的 / 如果 Promise 对象的 _state 为 REJECTED 时要执行的） 的函数
-        _handlerQueueQueue 中的函数在执行时接收一个参数，值为 Promise 对象的 _result
+    1. 把 onFulfilled 函数和 onRejected 函数都放到一个队列，这个队列用一个数组 _handlerQueue 来表示，
+    2. 依次处理这个 _handlerQueue 中 符合条件（如果 Promise 对象的 _state 为 FULFILLED 时要执行的 / 如果 Promise 对象的 _state 为 REJECTED 时要执行的） 的函数
+        _handlerQueue 中的函数在执行时接收一个参数，值为 Promise 对象的 _result
 
-        如果要判断放到 _handlerQueueQueue 里的函数是否 符合条件，就不能 仅仅放入函数，即不能简单的执行 this._handlerQueueQueue.push(onFulfilled, onRejected);
+        如果要判断放到 _handlerQueue 里的函数是否 符合条件，就不能 仅仅放入函数，即不能简单的执行 this._handlerQueue.push(onFulfilled, onRejected);
         而是 放入一个对象 F，这个对象 F 包含 函数 和 这个函数是在 Promise 对象的 _state 的值为什么的时候才会被执行的，
-        _handlerQueueQueue ，形如：
+        _handlerQueue ，形如：
         [
           {executor: fn1, onState: FULFILLED },
           {executor: fn2, onState: REJECTED },
           {executor: fn3, onState: FULFILLED },
           ... 
         ]
-        另外 _handlerQueueQueue 里的函数的执行结果 会作为 要执行 p1 的 resolve 还是 reject 的判断条件 以及 p1 的 resolve 或者 reject 执行时接收的实参，
+        另外 _handlerQueue 里的函数的执行结果 会作为 要执行 p1 的 resolve 还是 reject 的判断条件 以及 p1 的 resolve 或者 reject 执行时接收的实参，
         所以要把 p1 的 resolve 和 reject 都放到对象 F 里面方便以后执行，
-        _handlerQueueQueue ，形如：
+        _handlerQueue ，形如：
         [
           {executor: fn1, onState: FULFILLED, resolve: resolve, reject: reject },
           {executor: fn2, onState: REJECTED, resolve: resolve, reject: reject },
           {executor: fn3, onState: FULFILLED, resolve: resolve, reject: reject },
           ... 
         ]
-        将 把对象 F 放入 _handlerQueueQueue 这个功能 封装成函数 _toHandlerQueue
-        将 处理 _handlerQueueQueue 里的函数 这个功能 封装成函数 _runHandlerQueue      
+        将 把对象 F 放入 _handlerQueue 这个功能 封装成函数 _toHandlerQueue
+        将 处理 _handlerQueue 里的函数 这个功能 封装成函数 _runHandlerQueue      
         
         -> 🟢 当 Promise 对象的状态发生改变，也就是 执行了 _changeState 的时候，也需要运行 _runHandlerQueue
 
 
-        1. 如果 _handlerQueueQueue 中的函数执行过程中没有出错，
+        1. 如果 _handlerQueue 中的函数执行过程中没有出错，
 
-              如果 _handlerQueueQueue 中的函数的返回值 是一个 Promise 对象 p2 
+              如果 _handlerQueue 中的函数的返回值 是一个 Promise 对象 p2 
               那么 then 的返回值 p1 的 _state 和  _result 和 p2 保持一致
             
-              如果 _handlerQueueQueue 中的函数的返回值 不是一个 Promise 对象 
-              那么 then 的返回值 p1 的 _state 为 fulFilled ， _result 值为 _handlerQueueQueue 中的函数的返回值，
+              如果 _handlerQueue 中的函数的返回值 不是一个 Promise 对象 
+              那么 then 的返回值 p1 的 _state 为 fulFilled ， _result 值为 _handlerQueue 中的函数的返回值，
 
-        2. 如果 _handlerQueueQueue 中的函数执行过程中出错， 
-              那么 then 的返回值 p1 的 _state 为 rejected ， _result 值为 _handlerQueueQueue 中的函数执行过程中抛出的错误信息
+        2. 如果 _handlerQueue 中的函数执行过程中出错， 
+              那么 then 的返回值 p1 的 _state 为 rejected ， _result 值为 _handlerQueue 中的函数执行过程中抛出的错误信息
 
         3. 如果 then 执行的时候 没有接收到参数 或者 接收到的参数不是函数，p1 的 _state 和 _result 和原对象一样
 
